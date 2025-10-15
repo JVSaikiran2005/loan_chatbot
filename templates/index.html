@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tata Capital - Personal Loan Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <img src="https://www.tatacapital.com/images/logo.png" alt="Tata Capital" class="logo-img">
+                <h1>Tata Capital Personal Loan Assistant</h1>
+            </div>
+            <div class="header-info">
+                <p><i class="fas fa-shield-alt"></i> Secure & Trusted</p>
+                <p><i class="fas fa-clock"></i> Quick Approval</p>
+            </div>
+        </header>
+
+        <!-- Main Chat Interface -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Loan Assistant</span>
+                </div>
+                <div class="chat-status">
+                    <span class="status-indicator" id="statusIndicator">Online</span>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! Welcome to Tata Capital's Personal Loan Assistant. I'm here to help you get the best personal loan offer tailored to your needs. I can help you with loan amounts up to ₹40 lakhs with competitive interest rates starting from 10.99% per annum. Would you like to explore our personal loan options?</p>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-group">
+                    <input type="text" id="messageInput" placeholder="Type your message here..." autocomplete="off">
+                    <button id="sendButton" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-options" id="inputOptions" style="display: none;">
+                    <button class="option-button" data-type="text">Text</button>
+                    <button class="option-button" data-type="number">Number</button>
+                    <button class="option-button" data-type="phone">Phone</button>
+                </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="file-upload-section" id="fileUploadSection" style="display: none;">
+                <div class="upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Upload your salary slip (PDF, JPG, PNG)</p>
+                    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                    <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download Section -->
+            <div class="download-section" id="downloadSection" style="display: none;">
+                <div class="download-card">
+                    <i class="fas fa-file-pdf"></i>
+                    <h3>Sanction Letter Ready!</h3>
+                    <p>Your loan has been approved. Download your sanction letter.</p>
+                    <button class="download-button" id="downloadButton">
+                        <i class="fas fa-download"></i> Download Sanction Letter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar with Loan Information -->
+        <div class="sidebar">
+            <div class="loan-info-card">
+                <h3><i class="fas fa-info-circle"></i> Loan Information</h3>
+                <div class="info-item">
+                    <span class="label">Loan Amount:</span>
+                    <span class="value" id="loanAmount">Not specified</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Interest Rate:</span>
+                    <span class="value" id="interestRate">TBD</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Tenure:</span>
+                    <span class="value" id="tenure">Not specified</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">EMI:</span>
+                    <span class="value" id="emi">TBD</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Status:</span>
+                    <span class="value" id="loanStatus">In Progress</span>
+                </div>
+            </div>
+
+            <div class="features-card">
+                <h3><i class="fas fa-star"></i> Why Choose Tata Capital?</h3>
+                <ul>
+                    <li><i class="fas fa-check"></i> Quick approval in 24-48 hours</li>
+                    <li><i class="fas fa-check"></i> Competitive interest rates</li>
+                    <li><i class="fas fa-check"></i> No hidden charges</li>
+                    <li><i class="fas fa-check"></i> Flexible repayment options</li>
+                    <li><i class="fas fa-check"></i> 24/7 customer support</li>
+                </ul>
+            </div>
+
+            <div class="contact-card">
+                <h3><i class="fas fa-phone"></i> Need Help?</h3>
+                <p>Call us at: <strong>1800-209-8808</strong></p>
+                <p>Email: customer.service@tatacapital.com</p>
+                <p>Available 24/7</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing your request...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
+
