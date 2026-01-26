@@ -70,7 +70,7 @@ class MasterAgent:
                 return sales_agent.get_loan_amount_inquiry(name)
             else:
                 return {
-                    "message": "Could you please tell me your full name?",
+                    "message": "Great! I'd be happy to help you with a personal loan. What is your full name, please?",
                     "requires_input": True,
                     "input_type": "text"
                 }
@@ -83,7 +83,7 @@ class MasterAgent:
                 return sales_agent.get_loan_purpose_inquiry(conversation_data['customer_data']['name'])
             else:
                 return {
-                    "message": "Please provide your 10-digit mobile number for verification.",
+                    "message": f"Thank you, {conversation_data['customer_data']['name']}. Please provide your 10-digit mobile number for verification.",
                     "requires_input": True,
                     "input_type": "phone"
                 }
@@ -96,7 +96,7 @@ class MasterAgent:
                 return sales_agent.get_loan_tenure_inquiry(amount)
             else:
                 return {
-                    "message": "What loan amount are you looking for? (Please enter amount in rupees, e.g., 500000)",
+                    "message": "What loan amount are you looking for? (Please enter amount in rupees, e.g., 500000 for ₹5 lakhs)",
                     "requires_input": True,
                     "input_type": "number"
                 }
@@ -125,7 +125,7 @@ class MasterAgent:
                 # Move to verification phase
                 conversation_data['status'] = 'verification'
                 return {
-                    "message": f"Thank you for providing your details, {conversation_data['customer_data']['name']}. Now I'll verify your information and check your eligibility. This will take just a moment.",
+                    "message": f"Perfect! Thank you for providing your details, {conversation_data['customer_data']['name']}. Now I'll verify your information and check your eligibility. This will take just a moment.",
                     "requires_input": False
                 }
             else:
@@ -134,6 +134,12 @@ class MasterAgent:
                     "requires_input": True,
                     "input_type": "number"
                 }
+        
+        # Fallback response in case of unexpected state
+        return {
+            "message": "I'm here to help! Could you please provide the information I'm requesting?",
+            "requires_input": True
+        }
     
     def _handle_verification_phase(self, user_message, conversation_data, verification_agent):
         """Handle KYC verification"""
@@ -213,7 +219,13 @@ class MasterAgent:
         """Extract name from user input"""
         # Simple name extraction - look for capitalized words
         words = text.split()
-        name_words = [word for word in words if word[0].isupper() and len(word) > 1]
+        name_words = []
+        for word in words:
+            # Remove punctuation and check if word starts with uppercase
+            clean_word = word.strip('.,!?;:\'"')
+            if clean_word and clean_word[0].isupper() and len(clean_word) > 1:
+                name_words.append(clean_word)
+        
         if name_words:
             return ' '.join(name_words)
         return None
