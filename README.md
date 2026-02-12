@@ -33,6 +33,7 @@ An AI-driven conversational loan assistant that simulates a human-like sales pro
 - **Backend**: Python Flask
 - **Frontend**: HTML5, CSS3, JavaScript
 - **PDF Generation**: ReportLab
+- **ML / AI**: Hugging Face `transformers` with a local conversational model (no external API keys required)
 - **Styling**: Custom CSS with modern design
 - **Icons**: Font Awesome
 
@@ -48,6 +49,12 @@ An AI-driven conversational loan assistant that simulates a human-like sales pro
    ```bash
    pip install -r requirements.txt
    ```
+
+   > Note: the ML-powered conversational fallback uses Hugging Face `transformers`
+   > and PyTorch (`torch`). The versions in `requirements.txt` are suitable for a
+   > typical CPU-only Windows setup, but if you face issues installing `torch`,
+   > please refer to the official PyTorch installation guide and adjust the
+   > version/index URL as needed.
 
 3. **Run the application**
    ```bash

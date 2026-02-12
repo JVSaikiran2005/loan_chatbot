@@ -11,6 +11,7 @@ from agents.sales_agent import SalesAgent
 from agents.verification_agent import VerificationAgent
 from agents.underwriting_agent import UnderwritingAgent
 from agents.sanction_letter_generator import SanctionLetterGenerator
+from agents.ml_model import LoanChatModel
 
 # Import mock APIs
 from mock_apis.crm_server import CRMServer
@@ -31,6 +32,9 @@ sales_agent = SalesAgent()
 verification_agent = VerificationAgent(crm_server)
 underwriting_agent = UnderwritingAgent(credit_bureau, offer_mart)
 sanction_generator = SanctionLetterGenerator()
+
+# Initialize Hugging Face-based ML model for fallback conversational responses
+ml_model = LoanChatModel()
 
 # Store active conversations
 active_conversations = {}
@@ -58,13 +62,14 @@ def chat():
     
     # Get response from Master Agent
     response = master_agent.process_message(
-        user_message, 
-        session_id, 
+        user_message,
+        session_id,
         active_conversations[session_id],
         sales_agent,
         verification_agent,
         underwriting_agent,
-        sanction_generator
+        sanction_generator,
+        ml_model=ml_model,
     )
     
     return jsonify({

@@ -1,6 +1,8 @@
 import json
 import re
 from datetime import datetime
+from typing import Any, Dict, Optional
+
 
 class MasterAgent:
     def __init__(self):
@@ -8,8 +10,17 @@ class MasterAgent:
         self.customer_info = {}
         self.loan_requirements = {}
         
-    def process_message(self, user_message, session_id, conversation_data, 
-                       sales_agent, verification_agent, underwriting_agent, sanction_generator):
+    def process_message(
+        self,
+        user_message: str,
+        session_id: str,
+        conversation_data: Dict[str, Any],
+        sales_agent,
+        verification_agent,
+        underwriting_agent,
+        sanction_generator,
+        ml_model: Optional[Any] = None,
+    ):
         """
         Main orchestrator that manages the conversation flow and coordinates worker agents
         """
@@ -35,7 +46,18 @@ class MasterAgent:
             return self._handle_completion(user_message, conversation_data)
         
         else:
-            return {"message": "I'm sorry, I didn't understand. Could you please rephrase?", "requires_input": True}
+            # Fallback: if an ML model is available, use it for a more
+            # natural-language response instead of a fixed template.
+            if ml_model is not None:
+                generated = ml_model.generate_response(user_message, conversation_data)
+                return {
+                    "message": generated,
+                    "requires_input": True,
+                }
+            return {
+                "message": "I'm sorry, I didn't understand. Could you please rephrase?",
+                "requires_input": True
+            }
     
     def _handle_initial_contact(self, user_message, conversation_data):
         """Handle initial customer contact and greeting"""
