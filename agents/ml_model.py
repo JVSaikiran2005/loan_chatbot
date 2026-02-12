@@ -94,29 +94,46 @@ class LoanChatModel:
                 "through the loan process. Please tell me what help you need with your loan."
             )
 
-        outputs = self._generator(
-            prompt,
-            max_new_tokens=self.max_new_tokens,
-            do_sample=True,
-            top_p=0.92,
-            temperature=0.7,
-            num_return_sequences=1,
-        )
-
-        raw = outputs[0]["generated_text"]
-
-        # Try to return only the part after the last "Assistant:" marker
-        if "Assistant:" in raw:
-            response_text = raw.split("Assistant:")[-1].strip()
-        else:
-            response_text = raw.strip()
-
-        # Basic safety: avoid returning an empty string
-        if not response_text:
-            response_text = (
-                "I'm here to help you with personal loans, eligibility and required documents. "
-                "Could you please rephrase your question?"
+        try:
+            outputs = self._generator(
+                prompt,
+                max_new_tokens=self.max_new_tokens,
+                do_sample=True,
+                top_p=0.92,
+                temperature=0.7,
+                num_return_sequences=1,
             )
 
-        return response_text
+            # Defensive checks around the Hugging Face output structure
+            if not outputs or not isinstance(outputs, list):
+                raise ValueError("Unexpected model output format")
+
+            first = outputs[0]
+            if not isinstance(first, dict) or "generated_text" not in first:
+                raise ValueError("Missing 'generated_text' in model output")
+
+            raw = str(first["generated_text"])
+
+            # Try to return only the part after the last "Assistant:" marker
+            if "Assistant:" in raw:
+                response_text = raw.split("Assistant:")[-1].strip()
+            else:
+                response_text = raw.strip()
+
+            # Basic safety: avoid returning an empty string
+            if not response_text:
+                response_text = (
+                    "I'm here to help you with personal loans, eligibility and required documents. "
+                    "Could you please rephrase your question?"
+                )
+
+            return response_text
+
+        except Exception:
+            # Absolute last-resort fallback: never let an ML error crash the app.
+            return (
+                "I'm having trouble generating a smart response right now, "
+                "but I can still help you with loan eligibility, documents and application steps. "
+                "Please tell me what you would like to know."
+            )
 
