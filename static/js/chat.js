@@ -230,10 +230,23 @@ class ChatInterface {
                 this.showToast('File uploaded successfully!', 'success');
                 this.addMessage(`File uploaded: ${file.name}`, 'user');
                 
-                // Continue the conversation
-                setTimeout(() => {
-                    this.sendMessage();
-                }, 1000);
+                // Inform backend that file was uploaded so conversation can progress
+                setTimeout(async () => {
+                    try {
+                        const r = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: 'I have uploaded the salary slip', session_id: this.sessionId })
+                        });
+                        const d = await r.json();
+                        if (d && d.response) {
+                            this.addMessage(d.response, 'bot');
+                            this.handleSpecialResponse(d);
+                        }
+                    } catch (err) {
+                        console.error('Post-upload notify error', err);
+                    }
+                }, 800);
             } else {
                 this.showToast(data.error || 'Upload failed', 'error');
             }

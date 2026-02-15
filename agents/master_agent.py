@@ -218,9 +218,49 @@ class MasterAgent:
             
             conversation_data['sanction_letter'] = sanction_letter_path
             conversation_data['status'] = 'completed'
-            
+            # Package files and notify manager (local cloud simulation)
+            try:
+                from agents.cloud_storage import CloudStorage
+                from agents.manager_notify import ManagerNotifier
+
+                storage = CloudStorage()
+                notifier = ManagerNotifier(storage)
+
+                # Gather files to include in package
+                files = {}
+                # include sanction letter
+                files['sanction_letter'] = sanction_letter_path
+                # include any uploaded files recorded in conversation
+                for idx, up in enumerate(conversation_data.get('uploaded_files', [])):
+                    files[f'uploaded_{idx}'] = up
+
+                package_meta = {
+                    'customer': conversation_data.get('customer_data', {}),
+                    'loan_details': conversation_data.get('loan_details', {}),
+                    'underwriting_result': conversation_data.get('underwriting_result', {})
+                }
+
+                pkg_path = storage.create_package(
+                    session_id=conversation_data.get('session_id', 'unknown'),
+                    files=files,
+                    package_meta=package_meta
+                )
+
+                # Notify manager / head for further processing
+                notify_payload = notifier.send_to_manager(
+                    session_id=conversation_data.get('session_id', 'unknown'),
+                    package_path=pkg_path,
+                    metadata=package_meta
+                )
+
+                conversation_data['package_path'] = pkg_path
+                conversation_data['manager_notification'] = notify_payload
+            except Exception:
+                # If packaging or notification fails, continue without blocking user
+                pass
+
             return {
-                "message": f"✅ Your sanction letter has been generated successfully! You can download it using the link below. Your loan will be disbursed within 24-48 hours after document verification. Thank you for choosing Tata Capital!",
+                "message": f"✅ Your sanction letter has been generated successfully! You can download it using the link below. Your loan will be disbursed within 24-48 hours after document verification. The application has been forwarded for final processing.",
                 "requires_input": False
             }
     

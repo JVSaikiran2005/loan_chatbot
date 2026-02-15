@@ -27,8 +27,9 @@ class LoanChatModel:
         # Allow overriding the model via environment variable.
         # Use a relatively small model by default to reduce download
         # size and memory usage.
+        # Prefer an instruction-following model by default to reduce hallucinations
         self.model_name = model_name or os.getenv(
-            "HF_LOAN_MODEL_NAME", "distilgpt2"
+            "HF_LOAN_MODEL_NAME", "google/flan-t5-small"
         )
         self.max_new_tokens = max_new_tokens
 
@@ -39,8 +40,17 @@ class LoanChatModel:
         # we fall back gracefully so that the main app still runs.
         if pipeline is not None:
             try:
+                # Choose pipeline task based on model type (seq2seq instruction models vs. causal LM)
+                model_lower = (self.model_name or '').lower()
+                if 'flan' in model_lower or 't5' in model_lower or 'text2' in model_lower:
+                    task = 'text2text-generation'
+                else:
+                    task = 'text-generation'
+
+                # Initialize selected pipeline on CPU by default
+                self._task = task
                 self._generator = pipeline(
-                    "text-generation",
+                    task,
                     model=self.model_name,
                     device="cpu",
                 )
@@ -67,10 +77,9 @@ class LoanChatModel:
 
         system_prompt = (
             "You are an AI banking assistant for a personal loan portal at Tata Capital. "
-            "Speak politely, concisely and clearly. "
-            "You can answer questions about personal loans, eligibility, documents, credit checks "
-            "and the general loan process. "
-            "Do not promise anything that contradicts the bank's policies. "
+            "Speak politely, professionally and clearly. Keep replies to one or two concise sentences. "
+            "Answer only about loans, eligibility, documents, credit checks, and the loan process. "
+            "Do not invent personal history or make unverifiable claims. Do not provide legal or financial advice beyond general information. "
         )
 
         context = (
@@ -95,14 +104,23 @@ class LoanChatModel:
             )
 
         try:
-            outputs = self._generator(
-                prompt,
-                max_new_tokens=self.max_new_tokens,
-                do_sample=True,
-                top_p=0.92,
-                temperature=0.7,
-                num_return_sequences=1,
-            )
+            # Use different generation kwargs depending on pipeline task
+            task = getattr(self, '_task', 'text-generation')
+            if task == 'text2text-generation':
+                gen_kwargs = dict(
+                    max_new_tokens=min(self.max_new_tokens, 64),
+                    do_sample=False,
+                    num_return_sequences=1,
+                )
+            else:
+                gen_kwargs = dict(
+                    max_new_tokens=min(self.max_new_tokens, 64),
+                    do_sample=False,
+                    num_return_sequences=1,
+                    repetition_penalty=1.2,
+                )
+
+            outputs = self._generator(prompt, **gen_kwargs)
 
             # Defensive checks around the Hugging Face output structure
             if not outputs or not isinstance(outputs, list):
@@ -114,17 +132,43 @@ class LoanChatModel:
 
             raw = str(first["generated_text"])
 
-            # Try to return only the part after the last "Assistant:" marker
+            # Extract assistant reply and defensively trim repeated phrases.
             if "Assistant:" in raw:
                 response_text = raw.split("Assistant:")[-1].strip()
             else:
                 response_text = raw.strip()
+
+            # Remove obvious repeated sentences (simple heuristic)
+            parts = [p.strip() for p in response_text.split('.') if p.strip()]
+            dedup = []
+            for p in parts:
+                if not dedup or p != dedup[-1]:
+                    dedup.append(p)
+
+            if dedup:
+                response_text = '. '.join(dedup)
+                if not response_text.endswith('.'):
+                    response_text += '.'
+
+            # Finally, enforce a short reply: keep only the first two sentences to avoid verbosity
+            sentences = [s.strip() for s in response_text.split('.') if s.strip()]
+            if len(sentences) > 2:
+                response_text = '. '.join(sentences[:2]) + '.'
 
             # Basic safety: avoid returning an empty string
             if not response_text:
                 response_text = (
                     "I'm here to help you with personal loans, eligibility and required documents. "
                     "Could you please rephrase your question?"
+                )
+
+            # Simple content filter: if model claims personal attributes or clearly off-topic text, fallback
+            low = response_text.lower()
+            off_topic_markers = ['i am in my', 'i have a degree', 'my first experience', 'we were young', 'paypal']
+            if any(marker in low for marker in off_topic_markers):
+                return (
+                    "I'm currently unable to provide a detailed ML-generated reply. "
+                    "I can still guide you through the loan process and required documents."
                 )
 
             return response_text

@@ -12,6 +12,8 @@ from agents.verification_agent import VerificationAgent
 from agents.underwriting_agent import UnderwritingAgent
 from agents.sanction_letter_generator import SanctionLetterGenerator
 from agents.ml_model import LoanChatModel
+from agents.cloud_storage import CloudStorage
+from agents.manager_notify import ManagerNotifier
 
 # Import mock APIs
 from mock_apis.crm_server import CRMServer
@@ -36,6 +38,10 @@ sanction_generator = SanctionLetterGenerator()
 # Initialize Hugging Face-based ML model for fallback conversational responses
 ml_model = LoanChatModel()
 
+# Initialize local cloud storage and manager notifier
+cloud_storage = CloudStorage()
+manager_notifier = ManagerNotifier(cloud_storage)
+
 # Store active conversations
 active_conversations = {}
 
@@ -59,6 +65,8 @@ def chat():
             'underwriting_status': False,
             'sanction_letter': None
         }
+        # keep session id inside conversation data for easier packaging
+        active_conversations[session_id]['session_id'] = session_id
     
     # Get response from Master Agent
     response = master_agent.process_message(
@@ -91,21 +99,18 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
-    # Simulate file processing
-    filename = f"salary_slip_{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    file_path = os.path.join('uploads', filename)
-    
-    # Create uploads directory if it doesn't exist
-    os.makedirs('uploads', exist_ok=True)
-    file.save(file_path)
-    
-    # Update conversation status
+    # Save to local cloud storage (simulated)
+    saved_path = cloud_storage.save_file(file.stream, file.filename, metadata={'session_id': session_id})
+
+    # Update conversation status and record saved filename
     if session_id in active_conversations:
         active_conversations[session_id]['salary_slip_uploaded'] = True
-    
+        active_conversations[session_id].setdefault('uploaded_files', []).append(saved_path)
+
     return jsonify({
         'message': 'File uploaded successfully',
-        'filename': filename
+        'filename': os.path.basename(saved_path),
+        'saved_path': saved_path
     })
 
 @app.route('/api/download/<session_id>')
@@ -116,7 +121,8 @@ def download_sanction_letter(session_id):
     conversation = active_conversations[session_id]
     if not conversation.get('sanction_letter'):
         return jsonify({'error': 'No sanction letter available'}), 404
-    
+
+    # Serve the sanction letter file
     return send_file(conversation['sanction_letter'], as_attachment=True)
 
 @app.route('/api/customers')
